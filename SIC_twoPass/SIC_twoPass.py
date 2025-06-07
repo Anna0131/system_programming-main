@@ -233,6 +233,7 @@ def passOne(file_path, opcode_table):
                 if operand == '***':
                     errorStatus.append(f"程式碼格式錯誤 (缺少運算元) in line : {num}")
                 intermediate.append([str(num), f"{loc[0]:04X}", label, "END", operand, "***", addressing])
+                operandConfirm.append([num, operand])
                 continue
 
             # ---------------------------
@@ -363,8 +364,6 @@ def passTwo(symbol_table, intermediate, operandConfirm):
     如果所有 operandConfirm 中的 base_operand 不在 symbol_table，就報錯。
     """
     errors2 = []
-    print("symbol_table", symbol_table)
-    print("operandConfirm", operandConfirm)
     for ln, sym in operandConfirm:
         # split the sym to get the label if it is indexed addressing
         if ',' in sym:
