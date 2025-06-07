@@ -171,6 +171,7 @@ def passOne(file_path, opcode_table):
                         # 我們先把 num 跟 label 存進 intermediate，loc 先留空
                         # 但為了你的錯誤檢查流，我這裡直接略過這一行
                         # 你可以根據需要再決定要不要把 label-only 這種情況「暫存」起來
+                        errorStatus.append(f"無效的 Opcode ({parts[0]}) in line : {num}")
                         continue
                 else:
                     # 只有一個 token，但又不在 opcode_table 裡，視為「無效指令」
