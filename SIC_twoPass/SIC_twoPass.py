@@ -135,7 +135,7 @@ def passOne(file_path, opcode_table):
 
             # ---------------------------
             # 先判斷「第一個 token 是 MNEMONIC 還是 LABEL」
-            # 若 parts[0] 在 opcode_table 或 special 或 == "RSUB"，就把它當作 mnemonic
+            # 若 parts[0] 屬於 opcode_table 或 special 或 == "RSUB"，就把它當作 mnemonic
             # 否則就假設 parts[0] 是 label，parts[1] 要在 opcode_table 或 special 或 == "RSUB"
             # ---------------------------
             label = '***'
@@ -145,8 +145,8 @@ def passOne(file_path, opcode_table):
             addressing = 'direct'
 
             # 把所有 token 先轉成大寫比對，但保留原始大小寫以免 literal 出錯
-            upper0 = parts[0].upper()
-            if upper0 in opcode_table or upper0 in special or upper0 == "RSUB":
+            upper0 = parts[0].upper() # upper0 是第一個token的大寫
+            if upper0 in opcode_table or upper0 in special or upper0 == "RSUB": # 流程圖中：判斷第一個token是否為mnemonic
                 # 第一個就是 mnemonic
                 label = '***'
                 mnemonic = upper0
@@ -154,7 +154,7 @@ def passOne(file_path, opcode_table):
                     operand = " ".join(parts[1:]).strip()
                 else:
                     operand = '***'
-            else:
+            else: # 流程圖中：第一個token不是mnemonic，是label
                 # parts[0] 當作 label，看 parts[1]
                 if len(parts) >= 2:
                     upper1 = parts[1].upper()
