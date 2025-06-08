@@ -445,6 +445,15 @@ def generate_object_program(symbol_table, intermediate):
     current_text = []
     current_start_addr = None
     
+    # Find the entry point from END instruction's operand
+    end_record = next((record for record in intermediate if record[3] == "END"), None)
+    entry_point = start_address  # Default to program start address
+    if end_record and end_record[4] != '***':
+        if end_record[4] in symbol_table:
+            entry_point = int(symbol_table[end_record[4]], 16)
+        else:
+            print(f"Warning: END 指令的運算元 {end_record[4]} 未定義，使用程式起始位址")
+    
     for record in intermediate:
         line_num, loc_hex, label, mnemonic, operand, opcode_hex, addressing = record
         
@@ -496,8 +505,8 @@ def generate_object_program(symbol_table, intermediate):
         text_record = f"T {current_start_addr:06X} {text_length:02X} {text_content}"
         object_records.append(text_record)
     
-    # Generate End record with proper spacing
-    end_record = f"E {start_address:06X}"
+    # Generate End record with entry point
+    end_record = f"E {entry_point:06X}"
     object_records.append(end_record)
     
     return object_records
