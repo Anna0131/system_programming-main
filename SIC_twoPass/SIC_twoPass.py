@@ -260,9 +260,39 @@ def passOne(file_path, opcode_table):
                 else:
                     # C'...' 佔 len(...) bytes，X'...' 佔 len(...)//2 bytes
                     if operand.upper().startswith("C'"):
-                        size = len(operand[2:-1])
-                    else:
-                        size = len(operand[2:-1]) // 2
+                        content = operand[2:-1]  # Remove C' and '
+                        size = len(content)
+                        # For long character strings, we need to create multiple intermediate entries
+                        if size > 30:  # If longer than 30 bytes
+                            chunks = [content[i:i+30] for i in range(0, len(content), 30)]
+                            for i, chunk in enumerate(chunks):
+                                if i == 0:
+                                    # First chunk uses original location
+                                    intermediate.append([str(num), f"{loc[0]:04X}", label, "BYTE", f"C'{chunk}'", "***", addressing])
+                                else:
+                                    # Subsequent chunks use new locations and no label
+                                    intermediate.append([str(num), f"{loc[0]:04X}", "***", "BYTE", f"C'{chunk}'", "***", addressing])
+                                loc[1] = loc[0] + len(chunk)
+                                loc[0] = loc[1]
+                            continue
+                    else:  # X'...'
+                        hex_content = operand[2:-1]  # Remove X' and '
+                        size = len(hex_content) // 2
+                        # For long hex strings, we need to create multiple intermediate entries
+                        if size > 30:  # If longer than 30 bytes
+                            chunks = [hex_content[i:i+60] for i in range(0, len(hex_content), 60)]  # 60 hex chars = 30 bytes
+                            for i, chunk in enumerate(chunks):
+                                if i == 0:
+                                    # First chunk uses original location
+                                    intermediate.append([str(num), f"{loc[0]:04X}", label, "BYTE", f"X'{chunk}'", "***", addressing])
+                                else:
+                                    # Subsequent chunks use new locations and no label
+                                    intermediate.append([str(num), f"{loc[0]:04X}", "***", "BYTE", f"X'{chunk}'", "***", addressing])
+                                loc[1] = loc[0] + len(chunk) // 2
+                                loc[0] = loc[1]
+                            continue
+                    
+                # For normal length BYTE instructions
                 intermediate.append([str(num), f"{loc[0]:04X}", label, "BYTE", operand, "***", addressing])
                 loc[1] = loc[0] + size
                 loc[0] = loc[1]
