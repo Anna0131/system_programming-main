@@ -529,7 +529,7 @@ def passTwo(symbol_table, intermediate, operandConfirm):
     成功後產生目的碼。
     """
     errors2 = []
-    """
+    
     print("\n==== Symbol Table ====")
     print("Label   Address")
     print("-" * 20)
@@ -545,7 +545,7 @@ def passTwo(symbol_table, intermediate, operandConfirm):
     print("-" * 20)
 
     print_intermediate(intermediate)
-    """
+    
 
     for ln, sym in operandConfirm:
         # split the sym to get the label if it is indexed addressing
@@ -565,12 +565,12 @@ def passTwo(symbol_table, intermediate, operandConfirm):
     object_program = generate_object_program(symbol_table, intermediate)
     
     # 寫入目的碼檔案
-    with open('object_program.txt', 'w') as f:
+    with open('109241047蔣馥安_passTwo_output.txt', 'w') as f:
         for record in object_program:
             print(record)
             f.write(record + '\n')
 
-    print("\n目的碼已寫入 object_program.txt")
+    print("\n目的碼已寫入 109241047蔣馥安_passTwo_output.txt")
 
 # ===================================================================================
 #                                      Main
