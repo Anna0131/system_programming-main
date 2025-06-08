@@ -359,12 +359,155 @@ def passOne(file_path, opcode_table):
 # ===================================================================================
 #                                     passTwo
 # ===================================================================================
+def generate_object_code(operand, opcode, symbol_table, addressing):
+    """Generate object code for an instruction"""
+    if opcode == '***':
+        # Special handling for BYTE instruction
+        if operand.startswith("C'") and operand.endswith("'"):  # Character literal
+            chars = operand[2:-1]  # Remove C' and '
+            return ''.join([f"{ord(c):02X}" for c in chars])
+        elif operand.startswith("X'") and operand.endswith("'"):  # Hex literal
+            return operand[2:-1]
+        return None
+    
+    # Special handling for RSUB
+    if opcode == '4C':  # RSUB opcode
+        return '4C0000'  # RSUB always uses direct addressing with address 0000
+        
+    if operand == '***':
+        return None
+    
+    # Handle different addressing modes
+    if ',' in operand:  # Index addressing
+        base_addr = operand.split(',')[0]
+        if base_addr in symbol_table:
+            addr = int(symbol_table[base_addr], 16)
+            return f"{opcode}{addr + 0x8000:04X}"  # Set X bit (bit 15) to 1
+    elif operand in symbol_table:  # Direct addressing
+        addr = int(symbol_table[operand], 16)
+        return f"{opcode}{addr:04X}"
+    elif is_valid_decimal(operand):  # Immediate value
+        return f"{opcode}{int(operand):04X}"
+    
+    return None
+
+def generate_object_program(symbol_table, intermediate):
+    """Generate SIC object program (H, T, and E records)"""
+    object_records = []
+    
+    # Find program name and start address from first START instruction
+    start_record = next((record for record in intermediate if record[3] == "START"), None)
+    if not start_record:
+        return []
+    
+    program_name = start_record[2] if start_record[2] != '***' else 'PROG'
+    start_address = int(start_record[1], 16)
+    
+    # Find program length from last instruction's address
+    last_record = intermediate[-1]
+    program_length = int(last_record[1], 16) - start_address
+    
+    # Generate Header record with proper spacing
+    header = f"H {program_name:<6s} {start_address:06X} {program_length:06X}"
+    object_records.append(header)
+    
+    # Generate Text records
+    current_text = []
+    current_start_addr = None
+    
+    for record in intermediate:
+        line_num, loc_hex, label, mnemonic, operand, opcode_hex, addressing = record
+        
+        # Skip START and END records
+        if mnemonic in ["START", "END"]:
+            continue
+            
+        # Skip RESW and RESB (reserved space)
+        if mnemonic in ["RESW", "RESB"]:
+            if current_text:  # Output accumulated text record
+                text_length = len(''.join(current_text)) // 2
+                # Format text record with spaces between object codes
+                text_content = ' '.join(current_text)
+                text_record = f"T {current_start_addr:06X} {text_length:02X} {text_content}"
+                object_records.append(text_record)
+                current_text = []
+                current_start_addr = None
+            continue
+        
+        # Generate object code for instruction
+        obj_code = generate_object_code(operand, opcode_hex, symbol_table, addressing)
+        if obj_code is None:
+            continue
+        
+        # Start new text record if needed
+        if current_start_addr is None:
+            current_start_addr = int(loc_hex, 16)
+        
+        # Check if adding this code would exceed maximum text record length (30 bytes)
+        # Note: Now we need to consider actual object code length, not string length
+        current_length = sum(len(code.replace(" ", "")) // 2 for code in current_text)
+        new_code_length = len(obj_code.replace(" ", "")) // 2
+        
+        if current_length + new_code_length > 30:
+            # Output current text record and start new one
+            text_length = current_length
+            text_content = ' '.join(current_text)
+            text_record = f"T {current_start_addr:06X} {text_length:02X} {text_content}"
+            object_records.append(text_record)
+            current_text = []
+            current_start_addr = int(loc_hex, 16)
+        
+        current_text.append(obj_code)
+    
+    # Output final text record if any
+    if current_text:
+        text_length = sum(len(code.replace(" ", "")) // 2 for code in current_text)
+        text_content = ' '.join(current_text)
+        text_record = f"T {current_start_addr:06X} {text_length:02X} {text_content}"
+        object_records.append(text_record)
+    
+    # Generate End record with proper spacing
+    end_record = f"E {start_address:06X}"
+    object_records.append(end_record)
+    
+    return object_records
+
+def print_intermediate(intermediate):
+    """Print intermediate code in a formatted table"""
+    print("\n==== Intermediate Code ====")
+    print("Line  Loc    Label   Mnemonic  Operand    OpCode  Addressing")
+    print("-" * 60)
+    for record in intermediate:
+        line_num, loc_hex, label, mnemonic, operand, opcode_hex, addressing = record
+        # Format each field with proper width
+        print(f"{line_num:4s}  {loc_hex:6s} {label:8s} {mnemonic:8s} {operand:10s} {opcode_hex:6s} {addressing}")
+    print("-" * 60)
+
 def passTwo(symbol_table, intermediate, operandConfirm):
     """
-    passTwo 僅做「找不到 symbol」的檢查，
+    passTwo 做「找不到 symbol」的檢查，
     如果所有 operandConfirm 中的 base_operand 不在 symbol_table，就報錯。
+    成功後產生目的碼。
     """
     errors2 = []
+    """
+    print("\n==== Symbol Table ====")
+    print("Label   Address")
+    print("-" * 20)
+    for label, addr in symbol_table.items():
+        print(f"{label:8s} {addr}")
+    print("-" * 20)
+
+    print("\n==== Operand Confirmation ====")
+    print("Line  Symbol")
+    print("-" * 20)
+    for ln, sym in operandConfirm:
+        print(f"{ln:4d}  {sym}")
+    print("-" * 20)
+
+    print_intermediate(intermediate)
+    """
+
     for ln, sym in operandConfirm:
         # split the sym to get the label if it is indexed addressing
         if ',' in sym:
@@ -373,13 +516,22 @@ def passTwo(symbol_table, intermediate, operandConfirm):
             errors2.append(f"[passTwo] 錯誤：第 {ln} 行使用了未定義的符號 {sym}。")
 
     if errors2:
-        print("==== passTwo 發現的錯誤 ====")
+        print("\n==== passTwo 發現的錯誤 ====")
         for e in errors2:
             print(e)
         sys.exit(1)
 
-    # 如果要繼續組物件碼 H/T/E，就在這裡接續；本範例只示範「未定義符號檢查」到此結束
-    print("==== passTwo 沒有發現未定義符號，後續可做物件碼組合 ====")
+    # 產生目的碼
+    print("\n==== 產生目的碼 ====")
+    object_program = generate_object_program(symbol_table, intermediate)
+    
+    # 寫入目的碼檔案
+    with open('object_program.txt', 'w') as f:
+        for record in object_program:
+            print(record)
+            f.write(record + '\n')
+
+    print("\n目的碼已寫入 object_program.txt")
 
 # ===================================================================================
 #                                      Main
