@@ -134,7 +134,7 @@ def passOne(file_path, opcode_table):
     special = {"START", "END", "WORD", "BYTE", "RESW", "RESB"}#特殊指令集
     used_labels = set()# 已使用過的label
 
-    with open(file_path, 'r') as file, open('109241047蔣馥安_passOne_output.txt', 'w') as PassOne_output_file:
+    with open(file_path, 'r') as file, open('passOne_output.txt', 'w') as PassOne_output_file:
         for num, raw_line in enumerate(file, start=1): 
         # enumerate是一個內建函式，會把可迭代物件（這裡是 file）每個元素「打包」成 (index, element) 形式，依序回傳。
         # num：會依序是 1、2、3…，代表當前讀到的行號。raw_line：是 file 第 num 行的原始文字（包含「\n」）。            
@@ -712,12 +712,12 @@ def passTwo(symbol_table, intermediate, operandConfirm):
     object_program = generate_object_program(symbol_table, intermediate)
     
     # 寫入目的碼檔案
-    with open('109241047蔣馥安_passTwo_output.txt', 'w') as f:
+    with open('passTwo_output.txt', 'w') as f:
         for record in object_program:
             print(record)
             f.write(record + '\n')
 
-    print("\n目的碼已寫入 109241047蔣馥安_passTwo_output.txt")
+    print("\n目的碼已寫入 passTwo_output.txt")
 
 # ===================================================================================
 #                                      Main
