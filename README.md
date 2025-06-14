@@ -10,14 +10,19 @@
 - 支援程式內註解
 - 支援多種資料型態 (WORD, BYTE, RESW, RESB)
 
+## 執行畫面
+- <img width="495" alt="image" src="https://github.com/user-attachments/assets/69407b87-d907-4555-b6b2-38abf83f7a88" />
+- <img width="354" alt="image" src="https://github.com/user-attachments/assets/86ff3ba9-cdc1-49aa-8d8d-04e465dee400" />
+- <img width="408" alt="image" src="https://github.com/user-attachments/assets/d6343e5e-80fe-4e0d-b913-09f2559149dc" />
+- <img width="601" alt="image" src="https://github.com/user-attachments/assets/c8e2bacd-abba-48a1-bd9e-83a2c35abad6" />
+- <img width="739" alt="image" src="https://github.com/user-attachments/assets/4ca7f8c2-4bbd-41b8-b39f-0db8b412a085" />
+
 ## 系統需求
 
 - Python 3.7.2 或更高版本
 - 執行主程式指令：python3 SIC_twoPass.py SIC_test.txt
 
 
-passTwo_output.txt 是輸出檔
-passOne_output.txt 是中間檔
 ## 檔案結構
 
 - `SIC_twoPass.py`: 主程式檔案
